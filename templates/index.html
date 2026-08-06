@@ -69,11 +69,12 @@
   .row{ display:flex; gap:20px; margin-top:20px; align-items:flex-end; flex-wrap:wrap; }
   .row > div{ flex:1; min-width:160px; }
 
-  select{
+  select, input[type="number"]{
     width:100%; background:var(--bg-raise); border:1px solid var(--border-bright);
     color:var(--text); font-family:var(--mono); font-size:14px; padding:13px 14px;
-    outline:none;
+    outline:none; transition:border-color .2s ease;
   }
+  input[type="number"]:focus{ border-color:var(--cyan); }
 
   button{
     font-family:var(--mono); font-size:14px; letter-spacing:.04em; padding:14px 26px;
@@ -170,13 +171,8 @@
 
     <div class="row">
       <div>
-        <label for="num-questions">Number of Questions</label>
-        <select id="num-questions">
-          <option value="3">3 questions</option>
-          <option value="5" selected>5 questions</option>
-          <option value="7">7 questions</option>
-          <option value="10">10 questions</option>
-        </select>
+        <label for="num-questions">Number of Questions (3–50)</label>
+        <input type="number" id="num-questions" min="3" max="50" value="5">
       </div>
     </div>
 
@@ -261,7 +257,10 @@
   generateBtn.addEventListener('click', async () => {
     clearError();
     const url = urlInput.value.trim();
-    const numQuestions = numQuestionsSelect.value;
+    let numQuestions = parseInt(numQuestionsSelect.value, 10);
+    if(isNaN(numQuestions)) numQuestions = 5;
+    numQuestions = Math.max(3, Math.min(numQuestions, 50));
+    numQuestionsSelect.value = numQuestions;
 
     if(!url){
       showError('Please enter a URL.');
