@@ -28,7 +28,7 @@ def scrape_text(url: str) -> str:
     text = re.sub(r"\s+", " ", text).strip()
 
     # Cap length to keep the AI prompt a reasonable size / cost
-    return text[:8000]
+    return text[:12000]
 
 
 def generate_quiz_from_text(text: str, num_questions: int = 5) -> list:
@@ -60,7 +60,7 @@ Respond with ONLY valid JSON (no markdown fences, no extra text) in this exact s
 
     body = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.6},
+        "generationConfig": {"temperature": 0.6, "maxOutputTokens": 8192},
     }
 
     resp = requests.post(
@@ -107,7 +107,7 @@ def api_generate_quiz():
         num_questions = int(data.get("num_questions", 5))
     except (TypeError, ValueError):
         num_questions = 5
-    num_questions = max(3, min(num_questions, 10))
+    num_questions = max(3, min(num_questions, 50))
 
     if not url.startswith("http://") and not url.startswith("https://"):
         return jsonify({"error": "Please enter a valid URL starting with http:// or https://"}), 400
