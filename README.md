@@ -5,20 +5,20 @@ Paste a webpage link in, get an AI-generated multiple-choice quiz out.
 ## How it works
 1. You paste a URL into the site.
 2. The Flask backend fetches that page and strips it down to readable text.
-3. That text is sent to Claude (Anthropic's AI) with instructions to write multiple-choice
+3. That text is sent to Google Gemini (AI) with instructions to write multiple-choice
    questions based only on what's actually on the page.
 4. The frontend runs you through the quiz with a timer, then shows your score and a
    review of right/wrong answers.
 
 ## Before you deploy: get an API key
-This project calls the Anthropic API to generate questions, which needs a key that is
+This project calls the Google Gemini API to generate questions, which needs a key that is
 **yours** and **kept secret** (never put it in the frontend code or commit it to GitHub).
 
-1. Go to https://console.anthropic.com and sign up / log in.
-2. Go to **API Keys** and create a new key.
-3. Anthropic API usage is pay-as-you-go — you'll need to add billing details. Each quiz
-   generation costs a fraction of a cent, but it isn't free, so keep an eye on usage if
-   you share the link publicly.
+1. Go to https://aistudio.google.com/apikey and sign in with your Google account.
+2. Click **Create API Key**.
+3. Gemini has a free tier that's generous enough for a project like this — you likely
+   won't need to add billing at all to get started. Just keep an eye on Google's current
+   free-tier limits if the site gets a lot of traffic.
 4. Copy the key somewhere safe — you'll paste it into your hosting provider's dashboard,
    not into any file in this project.
 
@@ -31,9 +31,9 @@ pip install -r requirements.txt
 
 # set your API key for this terminal session
 # on Windows (PowerShell):
-$env:ANTHROPIC_API_KEY="your-key-here"
+$env:GEMINI_API_KEY="your-key-here"
 # on Mac/Linux:
-export ANTHROPIC_API_KEY="your-key-here"
+export GEMINI_API_KEY="your-key-here"
 
 python app.py
 ```
@@ -60,7 +60,7 @@ a small Flask app like this.
 
 4. **Add your API key**:
    - In the service's **Environment** tab, add a variable:
-     - Key: `ANTHROPIC_API_KEY`
+     - Key: `GEMINI_API_KEY`
      - Value: (paste the key you created earlier)
 
 5. Click **Create Web Service**. Render will build and deploy it — takes a few minutes.

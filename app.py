@@ -7,9 +7,9 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-ANTHROPIC_MODEL = "claude-sonnet-4-6"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
 
 def scrape_text(url: str) -> str:
@@ -32,10 +32,10 @@ def scrape_text(url: str) -> str:
 
 
 def generate_quiz_from_text(text: str, num_questions: int = 5) -> list:
-    """Call the Anthropic API to turn page text into structured MCQ quiz data."""
-    if not ANTHROPIC_API_KEY:
+    """Call the Google Gemini API to turn page text into structured MCQ quiz data."""
+    if not GEMINI_API_KEY:
         raise RuntimeError(
-            "Server is missing an ANTHROPIC_API_KEY environment variable. "
+            "Server is missing a GEMINI_API_KEY environment variable. "
             "Set it in your hosting provider's dashboard."
         )
 
@@ -58,24 +58,24 @@ Respond with ONLY valid JSON (no markdown fences, no extra text) in this exact s
   }}
 ]"""
 
-    headers = {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-    }
     body = {
-        "model": ANTHROPIC_MODEL,
-        "max_tokens": 2500,
-        "messages": [{"role": "user", "content": prompt}],
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.6},
     }
 
-    resp = requests.post(ANTHROPIC_API_URL, headers=headers, json=body, timeout=60)
+    resp = requests.post(
+        GEMINI_API_URL,
+        params={"key": GEMINI_API_KEY},
+        json=body,
+        timeout=60,
+    )
     resp.raise_for_status()
     data = resp.json()
 
-    raw_text = "".join(
-        block.get("text", "") for block in data.get("content", []) if block.get("type") == "text"
-    ).strip()
+    try:
+        raw_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    except (KeyError, IndexError):
+        raise RuntimeError("Gemini did not return a usable response. Please try again.")
 
     # Strip markdown code fences if the model added them anyway
     if raw_text.startswith("```"):
