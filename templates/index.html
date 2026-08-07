@@ -6,9 +6,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QuizMaster — AI Mock Test Generator</title>
 <meta name="description" content="Generate professional mock tests from a topic prompt, website link, pasted notes, or uploaded documents.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
   :root{
     --bg:#eef3f8; --panel:#ffffff; --panel-soft:#f8fafc; --ink:#162033;
     --muted:#65758b; --line:#d8e1ec; --primary:#2563eb; --primary-dark:#1d4ed8;
@@ -142,14 +143,14 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <a class="brand" href="/" aria-label="QuizMaster home"><img class="brand-logo" src="{{ url_for('static', filename='quizmaster-logo.png') }}" alt="QuizMaster AI-Powered"></a>
+    <a class="brand" href="/" aria-label="QuizMaster home"><img class="brand-logo" src="{{ url_for('static', filename='quizmaster-logo.png') }}" alt="QuizMaster AI-Powered" width="347" height="234"></a>
     <div class="pill">AI-powered mock tests from links, documents, notes, or topics</div>
   </div>
 
   <main id="setup-screen">
     <section class="hero">
       <div class="hero-copy">
-        <img class="hero-logo" src="{{ url_for('static', filename='quizmaster-logo.svg') }}" alt="QuizMaster AI-Powered logo">
+        <img class="hero-logo" src="{{ url_for('static', filename='quizmaster-logo.svg') }}" alt="QuizMaster AI-Powered logo" width="347" height="234">
         <div class="eyebrow">Professional exam practice</div>
         <h1>Create a mock test from anything.</h1>
         <p class="lead">Paste a topic like “profit and loss”, add a website link, paste notes, or upload a PYQ PDF/document. QuizMaster turns it into a timed test with answered, not answered, and marked-for-review tracking.</p>
