@@ -8,19 +8,33 @@ import requests
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, render_template, request
 
-try:
-    from pypdf import PdfReader
-except ImportError:  # pypdf is optional at import time, required only for PDF uploads
-    PdfReader = None
-
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB upload limit
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+OPENROUTER_API_KEYS = [
+    key.strip()
+    for key in os.environ.get("OPENROUTER_API_KEYS", os.environ.get("OPENROUTER_API_KEY", "")).split(",")
+    if key.strip()
+]
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "google/gemini-2.5-flash")
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+APP_PUBLIC_URL = os.environ.get("APP_PUBLIC_URL")
+APP_NAME = os.environ.get("APP_NAME", "QuizMaster")
 MAX_SOURCE_CHARS = 18000
 ALLOWED_DOCUMENT_EXTENSIONS = {"txt", "md", "csv", "pdf"}
+RETRYABLE_STATUS_CODES = {408, 409, 425, 429, 500, 502, 503, 504}
+
+
+class AIProviderError(RuntimeError):
+    """Raised when one AI provider cannot generate a quiz."""
+
+    def __init__(self, provider: str, message: str, retryable: bool = True):
+        super().__init__(message)
+        self.provider = provider
+        self.retryable = retryable
 
 
 def clean_text(text: str) -> str:
@@ -64,8 +78,8 @@ def extract_text_from_upload(upload) -> str:
         return ""
 
     if extension == "pdf":
-        if PdfReader is None:
-            raise RuntimeError("PDF support is not installed. Add pypdf to your environment.")
+        from pypdf import PdfReader
+
         reader = PdfReader(BytesIO(raw))
         pages = [page.extract_text() or "" for page in reader.pages[:30]]
         return clean_text("\n".join(pages))
@@ -95,14 +109,8 @@ def build_source_material(source_type: str, source_value: str, upload=None) -> t
     raise ValueError("Choose a valid source type: topic, url, text, or document.")
 
 
-def generate_quiz_from_text(text: str, num_questions: int = 10, source_type: str = "text") -> list:
-    """Call the Google Gemini API to turn source material into structured quiz data."""
-    if not GEMINI_API_KEY:
-        raise RuntimeError(
-            "Server is missing a GEMINI_API_KEY environment variable. "
-            "Set it in your hosting provider's dashboard."
-        )
-
+def build_quiz_prompt(text: str, num_questions: int, source_type: str) -> str:
+    """Create the shared prompt used by every configured AI provider."""
     if source_type == "topic":
         source_instruction = (
             "The user provided a topic prompt rather than source notes. Create a useful mock-test style quiz "
@@ -114,10 +122,10 @@ def generate_quiz_from_text(text: str, num_questions: int = 10, source_type: str
             "Do not invent details that are not supported by the source."
         )
 
-    prompt = f"""You are an expert exam paper setter creating a professional mock-test quiz.
+    return f'''You are an expert exam paper setter creating a professional mock-test quiz.
 
 Source material or topic:
-\"\"\"{text}\"\"\"
+"""{text}"""
 
 Instructions:
 - {source_instruction}
@@ -136,34 +144,113 @@ Respond with ONLY valid JSON (no markdown fences, no extra text) in this exact s
     "explanation": "one short sentence explaining the correct answer",
     "difficulty": "Easy"
   }}
-]"""
+]'''
 
-    body = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.45, "maxOutputTokens": 8192},
-    }
 
-    resp = requests.post(
-        GEMINI_API_URL,
-        params={"key": GEMINI_API_KEY},
-        json=body,
-        timeout=60,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-
-    try:
-        raw_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-    except (KeyError, IndexError):
-        raise RuntimeError("Gemini did not return a usable response. Please try again.")
-
+def parse_questions(raw_text: str, num_questions: int) -> list:
+    """Parse and validate quiz JSON returned by an AI provider."""
+    raw_text = raw_text.strip()
     if raw_text.startswith("```"):
         raw_text = re.sub(r"^```(json)?", "", raw_text).strip()
         raw_text = re.sub(r"```$", "", raw_text).strip()
 
     questions = json.loads(raw_text)
+    if isinstance(questions, dict) and "questions" in questions:
+        questions = questions["questions"]
     validate_questions(questions, num_questions)
     return questions
+
+
+def is_retryable_response(resp: requests.Response) -> bool:
+    """Return True when a provider response should fall through to the next API key/provider."""
+    return resp.status_code in RETRYABLE_STATUS_CODES
+
+
+def request_gemini_quiz(prompt: str, num_questions: int) -> list:
+    """Call Google Gemini directly."""
+    if not GEMINI_API_KEY:
+        raise AIProviderError("Gemini", "GEMINI_API_KEY is not configured.")
+
+    body = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.45, "maxOutputTokens": 8192},
+    }
+    resp = requests.post(GEMINI_API_URL, params={"key": GEMINI_API_KEY}, json=body, timeout=60)
+    if not resp.ok:
+        raise AIProviderError("Gemini", f"Gemini returned HTTP {resp.status_code}.", is_retryable_response(resp))
+
+    data = resp.json()
+    try:
+        raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError) as exc:
+        raise AIProviderError("Gemini", "Gemini did not return a usable response.") from exc
+
+    return parse_questions(raw_text, num_questions)
+
+
+def request_openrouter_quiz(prompt: str, num_questions: int, api_key: str, index: int) -> list:
+    """Call OpenRouter with a Gemini model."""
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "X-Title": APP_NAME,
+    }
+    if APP_PUBLIC_URL:
+        headers["HTTP-Referer"] = APP_PUBLIC_URL
+
+    body = {
+        "model": OPENROUTER_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.45,
+        "max_tokens": 8192,
+    }
+    resp = requests.post(OPENROUTER_API_URL, headers=headers, json=body, timeout=60)
+    provider = f"OpenRouter key #{index}"
+    if not resp.ok:
+        raise AIProviderError(provider, f"OpenRouter returned HTTP {resp.status_code}.", is_retryable_response(resp))
+
+    data = resp.json()
+    try:
+        raw_text = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError) as exc:
+        raise AIProviderError(provider, "OpenRouter did not return a usable response.") from exc
+
+    return parse_questions(raw_text, num_questions)
+
+
+def generate_quiz_from_text(text: str, num_questions: int = 10, source_type: str = "text") -> list:
+    """Generate structured quiz data using Gemini first, then OpenRouter fallbacks."""
+    prompt = build_quiz_prompt(text, num_questions, source_type)
+    provider_errors = []
+
+    providers = []
+    if GEMINI_API_KEY:
+        providers.append(("Gemini", lambda: request_gemini_quiz(prompt, num_questions)))
+    providers.extend(
+        (
+            f"OpenRouter key #{index}",
+            lambda key=key, index=index: request_openrouter_quiz(prompt, num_questions, key, index),
+        )
+        for index, key in enumerate(OPENROUTER_API_KEYS, start=1)
+    )
+
+    if not providers:
+        raise RuntimeError(
+            "No AI API keys are configured. Set GEMINI_API_KEY, OPENROUTER_API_KEY, "
+            "or comma-separated OPENROUTER_API_KEYS in your hosting provider's environment variables."
+        )
+
+    for _, provider_call in providers:
+        try:
+            return provider_call()
+        except (AIProviderError, requests.exceptions.RequestException, json.JSONDecodeError, ValueError) as exc:
+            provider_errors.append(str(exc))
+            if isinstance(exc, AIProviderError) and not exc.retryable:
+                continue
+
+    raise RuntimeError(
+        "All configured AI providers failed or hit limits. Last errors: " + " | ".join(provider_errors[-3:])
+    )
 
 
 def validate_questions(questions: list, expected_count: int) -> None:

@@ -1,18 +1,19 @@
 # QuizMaster
 
-Paste a webpage link in, get an AI-generated multiple-choice quiz out.
+Paste a topic, webpage link, notes, or document in, get an AI-generated multiple-choice quiz out.
 
 ## How it works
 1. You paste a URL into the site.
 2. The Flask backend fetches that page and strips it down to readable text.
-3. That text is sent to Google Gemini (AI) with instructions to write multiple-choice
-   questions based only on what's actually on the page.
+3. That text is sent to Google Gemini first, then to any configured OpenRouter Gemini
+   fallback keys if the direct Gemini key is rate-limited or unavailable.
 4. The frontend runs you through the quiz with a timer, then shows your score and a
    review of right/wrong answers.
 
 ## Before you deploy: get an API key
-This project calls the Google Gemini API to generate questions, which needs a key that is
-**yours** and **kept secret** (never put it in the frontend code or commit it to GitHub).
+This project calls Google Gemini and can automatically fall back to OpenRouter Gemini models.
+API keys must be **yours** and **kept secret** (never put them in frontend code or commit
+them to GitHub).
 
 1. Go to https://aistudio.google.com/apikey and sign in with your Google account.
 2. Click **Create API Key**.
@@ -29,11 +30,16 @@ You'll need Python 3.10+ installed.
 cd QuizMaster-web
 pip install -r requirements.txt
 
-# set your API key for this terminal session
+# set API keys for this terminal session
 # on Windows (PowerShell):
-$env:GEMINI_API_KEY="your-key-here"
+$env:GEMINI_API_KEY="your-gemini-key-here"
+$env:OPENROUTER_API_KEY="your-openrouter-key-here"
 # on Mac/Linux:
-export GEMINI_API_KEY="your-key-here"
+export GEMINI_API_KEY="your-gemini-key-here"
+export OPENROUTER_API_KEY="your-openrouter-key-here"
+
+# Optional: add more OpenRouter keys for extra fallback capacity
+export OPENROUTER_API_KEYS="openrouter-key-1,openrouter-key-2"
 
 python app.py
 ```
@@ -61,7 +67,11 @@ a small Flask app like this.
 4. **Add your API key**:
    - In the service's **Environment** tab, add a variable:
      - Key: `GEMINI_API_KEY`
-     - Value: (paste the key you created earlier)
+     - Value: (paste your Gemini key)
+     - Key: `OPENROUTER_API_KEY` or `OPENROUTER_API_KEYS`
+     - Value: (paste one OpenRouter key, or comma-separated keys for multiple fallbacks)
+     - Optional key: `OPENROUTER_MODEL`
+     - Optional value: `google/gemini-2.5-flash`
 
 5. Click **Create Web Service**. Render will build and deploy it — takes a few minutes.
    You'll get a live URL like `https://quizmaster-xxxx.onrender.com`.

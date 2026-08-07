@@ -1,0 +1,25 @@
+<svg width="640" height="360" viewBox="0 0 640 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">QuizMaster AI-Powered Logo</title>
+  <desc id="desc">Purple geometric cube icon above the QuizMaster AI-powered wordmark.</desc>
+  <rect width="640" height="360" fill="white"/>
+  <g transform="translate(250 42)">
+    <path d="M70 0L140 41V123L70 164L0 123V41L70 0Z" fill="url(#outer)"/>
+    <path d="M70 0L140 41L70 82L0 41L70 0Z" fill="url(#top)"/>
+    <path d="M0 41L70 82V164L0 123V41Z" fill="url(#left)"/>
+    <path d="M140 41L70 82V164L140 123V41Z" fill="url(#right)"/>
+    <path d="M70 43L113 68V119L70 144L27 119V68L70 43Z" fill="url(#inner)"/>
+    <path d="M27 68L70 93V144L27 119V68Z" fill="url(#innerLeft)"/>
+    <path d="M113 68L70 93V144L113 119V68Z" fill="url(#innerRight)"/>
+  </g>
+  <text x="320" y="260" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="62" font-weight="800" letter-spacing="-2" fill="#8a00d4">Quiz Master</text>
+  <text x="320" y="303" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="25" font-weight="500" letter-spacing="14" fill="#8a00d4">AI-POWERED</text>
+  <defs>
+    <linearGradient id="outer" x1="0" y1="0" x2="140" y2="164" gradientUnits="userSpaceOnUse"><stop stop-color="#c681ff"/><stop offset="1" stop-color="#7b1fd1"/></linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="140" y2="82" gradientUnits="userSpaceOnUse"><stop stop-color="#d48cff"/><stop offset="1" stop-color="#982ede"/></linearGradient>
+    <linearGradient id="left" x1="0" y1="41" x2="70" y2="164" gradientUnits="userSpaceOnUse"><stop stop-color="#ae55e7"/><stop offset="1" stop-color="#9f35dc"/></linearGradient>
+    <linearGradient id="right" x1="70" y1="82" x2="140" y2="123" gradientUnits="userSpaceOnUse"><stop stop-color="#ba67ef"/><stop offset="1" stop-color="#7a23c8"/></linearGradient>
+    <linearGradient id="inner" x1="27" y1="43" x2="113" y2="144" gradientUnits="userSpaceOnUse"><stop stop-color="#ff70ec"/><stop offset="1" stop-color="#c84eff"/></linearGradient>
+    <linearGradient id="innerLeft" x1="27" y1="68" x2="70" y2="144" gradientUnits="userSpaceOnUse"><stop stop-color="#ff72ed"/><stop offset="1" stop-color="#d05bff"/></linearGradient>
+    <linearGradient id="innerRight" x1="70" y1="93" x2="113" y2="119" gradientUnits="userSpaceOnUse"><stop stop-color="#ef68ee"/><stop offset="1" stop-color="#b03ce6"/></linearGradient>
+  </defs>
+</svg>
