@@ -36,7 +36,7 @@
   }
   .brand{ display:flex; align-items:center; gap:12px; font-weight:800; font-size:22px; }
   .brand-logo{
-    width:168px; height:auto; display:block; filter:drop-shadow(0 12px 28px rgba(124,58,237,.20));
+    width:44px; height:auto; display:block; filter:drop-shadow(0 12px 28px rgba(124,58,237,.20));
   }
   .pill{ padding:9px 13px; border:1px solid var(--line); background:rgba(255,255,255,.7); border-radius:999px; color:var(--muted); font-size:13px; }
   .hero{
@@ -147,14 +147,14 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <a class="brand" href="/" aria-label="QuizMaster home"><img class="brand-logo" src="{{ url_for('static', filename='quizmaster-logo.png') }}" alt="QuizMaster AI-Powered" width="347" height="234"></a>
+    <a class="brand" href="/" aria-label="QuizMaster home"><img class="brand-logo" src="{{ url_for('static', filename='quizmaster-logo.png') }}" alt="QuizMaster AI-Powered" width="234" height="234">QuizMaster</a>
     <div class="pill">AI-powered mock tests from links, documents, notes, or topics</div>
   </div>
 
   <main id="setup-screen">
     <section class="hero">
       <div class="hero-copy">
-        <img class="hero-logo" src="{{ url_for('static', filename='quizmaster-logo.svg') }}" alt="QuizMaster AI-Powered logo" width="347" height="234">
+        <img class="hero-logo" src="{{ url_for('static', filename='quizmaster-logo.svg') }}" alt="QuizMaster AI-Powered logo" width="234" height="234">
         <div class="eyebrow">Professional exam practice</div>
         <h1>Create a mock test from anything.</h1>
         <p class="lead">Paste a topic like “profit and loss”, add a website link, paste notes, or upload a PYQ PDF/document. QuizMaster turns it into a timed test with answered, not answered, and marked-for-review tracking.</p>
